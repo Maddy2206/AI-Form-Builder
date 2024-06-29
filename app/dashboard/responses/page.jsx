@@ -37,19 +37,30 @@ function Responses() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
         {formList && formList.length > 0 ? (
           formList.map((form, index) => {
+            // Find the indices of the first '{' and last '}' characters
             const firstBraceIndex = form.jsonform.indexOf("{");
             const lastBraceIndex = form.jsonform.lastIndexOf("}");
-            const jsonString = form.jsonform.substring(
-              firstBraceIndex,
-              lastBraceIndex + 1
-            );
-            return (
-              <FormListItemResp
-                key={index}
-                jsonForm={JSON.parse(jsonString)}
-                formRecord={form}
-              />
-            );
+
+            // Extract the JSON string between the first '{' and last '}' characters
+            const jsonString = form.jsonform.substring(firstBraceIndex, lastBraceIndex + 1);
+
+            // Log the JSON string for debugging
+            console.log("JSON String:", jsonString);
+
+            try {
+              // Parse the JSON string and pass it to the FormListItemResp component
+              const parsedJson = JSON.parse(jsonString);
+              return (
+                <FormListItemResp
+                  key={index}
+                  jsonForm={parsedJson}
+                  formRecord={form}
+                />
+              );
+            } catch (error) {
+              console.error("Failed to parse JSON string:", error);
+              return null; // Skip rendering this item
+            }
           })
         ) : (
           <p>No forms found</p>

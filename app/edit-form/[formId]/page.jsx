@@ -20,7 +20,7 @@ function EditForm({ params }) {
   const [record, setRecord] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState("light");
   const [selectedBackground, setSelectedBackground] = useState("");
-  const router = useRouter(); // Initialize useRouter inside the component
+  const router = useRouter(); 
 
   useEffect(() => {
     if (user) {
