@@ -6,11 +6,12 @@ import { and, eq } from "drizzle-orm";
 import React, { useEffect, useState } from "react";
 import FormUi from "../_components/FormUi";
 import Controller from "../_components/Controller";
-import { ArrowLeft, Share, Share2, SquareArrowOutUpRight } from "lucide-react";
+import { ArrowLeft, Copy, Share2, SquareArrowOutUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { RWebShare } from "react-web-share";
+import { toast } from "sonner";
 
 
 function EditForm({ params }) {
@@ -121,56 +122,77 @@ function EditForm({ params }) {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between">
-      <h2 className="flex gap-2 items-center my-4 cursor-pointer hover:font-bold" onClick={() => router.back()}>
-        <ArrowLeft /> Back
-      </h2> 
-      <div className="flex gap-2">
-  <Link href={ '/aiform/'+
-  record?.id } target="">
-    <Button className='flex gap-2'><SquareArrowOutUpRight/>Preview</Button>
-  </Link>
-  <RWebShare
-        data={{
-          text: jsonForm?.formSubheading + ", Build your forms in minutes using AI",
-          url: process.env.NEXT_PUBLIC_BASE_URL+"/aiform/"+record?.id,
-          title: jsonForm?.formTitle,
-        }}
-        onClick={() => console.log("shared successfully!")}
-      >
-         <Button variant="outline" size="sm" className="flex gap-2">
-          <Share2 className="h-5 w-5"></Share2>Share
-        </Button>
-      </RWebShare>
-</div>
-
-      </div>
-       
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 border rounded-lg shadow-md">
-          <Controller
-            selectedTheme={(value) => {
-              updateControllerFields(value, "theme");
-              setSelectedTheme(value);
-            }}
-            selectedBackground={(value) => {
-              setSelectedBackground(value);
-              updateControllerFields(value, "background");
-            }}
-          />
-        </div>
-        <div
-          className="md:col-span-2 border rounded-lg p-3 flex items-center justify-center"
-          style={{ backgroundImage: selectedBackground }}
+    <div className="min-h-screen bg-gray-50">
+      {/* Top bar */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium"
         >
-          <FormUi
-            jsonForm={jsonForm}
-            onFieldUpdate={onFieldUpdate}
-            deleteField={(index) => deleteField(index)}
-            selectedTheme={selectedTheme}
-          />
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+
+        <div className="flex items-center gap-2">
+          <Link href={'/aiform/' + record?.id} target="_blank">
+            <Button size="sm" variant="outline" className="flex gap-2 h-8 text-xs">
+              <SquareArrowOutUpRight className="h-3.5 w-3.5" />
+              Preview
+            </Button>
+          </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex gap-2 h-8 text-xs"
+            onClick={() => {
+              const url = `${process.env.NEXT_PUBLIC_BASE_URL}/aiform/${record?.id}`;
+              navigator.clipboard.writeText(url).then(() => toast('Link copied!'));
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copy Link
+          </Button>
+          <RWebShare
+            data={{
+              text: jsonForm?.formSubheading + ', Build your forms in minutes with INTELLIFORM',
+              url: process.env.NEXT_PUBLIC_BASE_URL + '/aiform/' + record?.id,
+              title: jsonForm?.formTitle,
+            }}
+          >
+            <Button size="sm" variant="outline" className="flex gap-2 h-8 text-xs">
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </Button>
+          </RWebShare>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-6xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+            <Controller
+              selectedTheme={(value) => {
+                updateControllerFields(value, 'theme');
+                setSelectedTheme(value);
+              }}
+              selectedBackground={(value) => {
+                setSelectedBackground(value);
+                updateControllerFields(value, 'background');
+              }}
+            />
+          </div>
+          <div
+            className="md:col-span-2 border border-gray-200 rounded-2xl p-4 flex items-center justify-center min-h-[500px] bg-white shadow-sm"
+            style={{ backgroundImage: selectedBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}
+          >
+            <FormUi
+              jsonForm={jsonForm}
+              onFieldUpdate={onFieldUpdate}
+              deleteField={(index) => deleteField(index)}
+              selectedTheme={selectedTheme}
+            />
+          </div>
         </div>
       </div>
     </div>

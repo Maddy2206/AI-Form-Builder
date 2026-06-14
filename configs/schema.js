@@ -1,6 +1,4 @@
-import { integer } from "drizzle-orm/sqlite-core";
-
-const { pgTable,serial,text,varchar} = require("drizzle-orm/pg-core");
+const { pgTable,serial,text,varchar,integer} = require("drizzle-orm/pg-core");
 
 export const JsonForms=pgTable('jsonForms',{
     id:serial('id').primaryKey(),

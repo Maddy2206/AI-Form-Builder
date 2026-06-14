@@ -19,7 +19,7 @@ import { JsonForms } from '@/configs/schema';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-const PROMPT = ",On the basis of the description  give a form in JSON format   with formTitle, formSubheading, and with formFields having fieldName, fieldTitle, fieldType, placeholder, label, ,required Fields in JSON format.Just only give the JSON formatted file in proper format nad nothing else.";
+const PROMPT = `, On the basis of the description give a form in JSON format with formTitle, formSubheading, and formFields array. Each field must have: fieldName (camelCase, no spaces), fieldTitle, fieldType, placeholder, label, required (boolean). Supported fieldTypes: text, textarea, email, phone, number, url, date, time, select, radio, checkbox, rating, scale. Rules: For select/radio/checkbox always include options array (each option has a label string). For rating include maxRating: 5. For scale include min: 1, max: 10, minLabel, maxLabel. Use textarea for long-answer questions. Use rating or scale for satisfaction/rating questions. Use url for LinkedIn, GitHub, portfolio fields. Return ONLY valid JSON, no markdown, no explanation.`;
 
 function CreateForm() {
   const [openDialog, setOpenDialog] = useState(false);

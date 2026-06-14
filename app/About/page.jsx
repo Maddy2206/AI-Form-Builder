@@ -12,7 +12,7 @@ function About() {
       </h2>
 
       <p class="hidden text-gray-500 md:mt-4 md:block">
-      Discover the future of form building with our AI-powered solution. At Intelliform , we're revolutionizing the way you create and manage forms. Our innovative platform harnesses the power of artificial intelligence to streamline the entire process, from form creation to data management. Say goodbye to tedious manual work and hello to effortless form building. With Intelliform, you can create fully customized forms in seconds, saving you time and effort. Our intuitive interface and advanced features make it easy for anyone to design professional-looking forms with ease. Whether you're a business owner, marketer, educator, or individual, Intelliform empowers you to unleash your creativity and achieve your goals faster than ever before. Join the AI form-building revolution today and experience the future of digital transformation.
+      Discover the future of form building with Intelliform. We're revolutionizing the way you create and manage forms. Our innovative platform streamlines the entire process, from form creation to data management. Say goodbye to tedious manual work and hello to effortless form building. With Intelliform, you can create fully customized forms in seconds, saving you time and effort. Our intuitive interface and advanced features make it easy for anyone to design professional-looking forms with ease. Whether you're a business owner, marketer, educator, or individual, Intelliform empowers you to unleash your creativity and achieve your goals faster than ever before. Join the form-building revolution today and experience the future of digital transformation.
       </p>
 
       <div class="mt-4 md:mt-8">

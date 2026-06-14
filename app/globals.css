@@ -97,3 +97,75 @@
     @apply px-4;
   }
 }
+
+/* ─── IntelliForm Design System ─── */
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Keyframes */
+@keyframes blob-drift-1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(45px,-35px) scale(1.07); }
+  66%      { transform: translate(-22px,28px) scale(0.95); }
+}
+@keyframes blob-drift-2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40%      { transform: translate(-42px,18px) scale(1.05); }
+  72%      { transform: translate(28px,-38px) scale(0.94); }
+}
+@keyframes blob-drift-3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  30%      { transform: translate(22px,32px) scale(1.04); }
+  65%      { transform: translate(-28px,-18px) scale(0.97); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes card-float {
+  0%,100% { transform: translateY(0px) rotate(1.5deg); }
+  50%      { transform: translateY(-18px) rotate(1.5deg); }
+}
+@keyframes gradient-pan {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Animation classes */
+.blob-1 { animation: blob-drift-1  9s ease-in-out infinite; }
+.blob-2 { animation: blob-drift-2 11s ease-in-out infinite; }
+.blob-3 { animation: blob-drift-3 13s ease-in-out infinite; }
+.card-float { animation: card-float 5.5s ease-in-out infinite; }
+
+.anim-fade-up {
+  opacity: 0;
+  animation: fade-up 0.65s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.anim-d1 { animation-delay: 0.06s; }
+.anim-d2 { animation-delay: 0.15s; }
+.anim-d3 { animation-delay: 0.25s; }
+.anim-d4 { animation-delay: 0.37s; }
+.anim-d5 { animation-delay: 0.52s; }
+.anim-d6 { animation-delay: 0.68s; }
+
+/* Gradient animated text */
+.gradient-text {
+  background: linear-gradient(120deg, #0059FF 0%, #7C3AED 40%, #0059FF 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-pan 4s linear infinite;
+}
+
+/* Dot grid helper */
+.dot-grid {
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 28px 28px;
+}

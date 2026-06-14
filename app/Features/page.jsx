@@ -10,7 +10,7 @@ function Features() {
             <h2 className="text-3xl font-bold sm:text-4xl">Why choose Intelliform?</h2>
 
             <p className="mt-4 text-gray-700 text-lg">
-              Intelliform is an innovative AI-powered form creation tool that transforms the way you build and manage forms. By simply providing a brief description, Intelliform generates fully structured, customized forms in seconds, saving you time and effort.
+              Intelliform is an innovative form creation tool that transforms the way you build and manage forms. By simply providing a brief description, Intelliform generates fully structured, customized forms in seconds, saving you time and effort.
             </p>
           </div>
 
@@ -20,9 +20,9 @@ function Features() {
               href="#"
             >
                <Bot className='h-5 w-5 text-pink-500'></Bot>
-              <h2 className="mt-4 text-xl font-bold text-gray-900">AI-Powered Form Automation</h2>
+              <h2 className="mt-4 text-xl font-bold text-gray-900">Intelligent Form Automation</h2>
               <p className="mt-1 text-sm text-gray-700">
-                Automatically generate fully structured forms by simply providing a brief description, saving time and effort. Intelliform's AI engine intelligently analyzes your input to create forms tailored to your needs.
+                Automatically generate fully structured forms by simply providing a brief description, saving time and effort. Intelliform's smart engine analyzes your input to create forms tailored to your needs.
               </p>
             </a>
 

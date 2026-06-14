@@ -1,57 +1,33 @@
 import React from 'react';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import Link from 'next/link';
 
 function Footer() {
-    return (
-        <div className="grid grid-cols-4 gap-8 justify-items-center">
-            <div>
-                <Card className="w-full rounded-lg border border-gray-300 hover:border-blue-500 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Get Started and Sign In</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className='text-sm text-gray-400'>Begin your journey by clicking on the "Get Started" button. Sign in to your account and click on the Dashboard button to get started.</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div>
-                <Card className="w-full rounded-lg border border-gray-300 hover:border-blue-500 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Create Form</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className='text-sm text-gray-400'>Click on the "Create Form" button. Add a description to your form to provide context and information to your users.</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div>
-                <Card className="w-full rounded-lg border border-gray-300 hover:border-blue-500 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Preview and Edit</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className='text-sm text-gray-400'>Customize your form by adding or removing form fields. Adjust the theme and styling to match your preferences and branding.</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div>
-                <Card className="w-full rounded-lg border border-gray-300 hover:border-blue-500 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
-                    <CardHeader>
-                        <CardTitle>Share and Export responses</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className='text-sm text-gray-400'>Once your form is ready, share it with your desired audience. Track responses easily by accessing the Responses section.</p>
-                    </CardContent>
-                </Card>
-            </div>
+  return (
+    <footer className="border-t border-gray-100 dark:border-gray-800/70 py-8">
+      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-5">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3L14.5 9H21L15.75 13.1L17.85 19L12 15.4L6.15 19L8.25 13.1L3 9H9.5L12 3Z"
+                fill="white"
+                opacity="0.95"
+              />
+            </svg>
+          </div>
+          <span className="font-display font-bold text-sm text-gray-800 dark:text-gray-200">INTELLIFORM</span>
         </div>
-    );
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          © 2025 INTELLIFORM · Built for humans.
+        </p>
+        <div className="flex gap-5 text-xs text-gray-500 dark:text-gray-400">
+          <Link href="/About" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">About</Link>
+          <Link href="/Features" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Features</Link>
+          <Link href="/dashboard" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">Dashboard</Link>
+        </div>
+      </div>
+    </footer>
+  );
 }
 
 export default Footer;

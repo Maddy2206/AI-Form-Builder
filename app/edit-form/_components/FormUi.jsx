@@ -1,3 +1,5 @@
+'use client';
+
 import { Input } from '@/components/ui/input';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -6,170 +8,539 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
-import { Pen } from 'lucide-react';
+import { Phone, Link2, Star, Zap } from 'lucide-react';
 import FieldEdit from './FieldEdit';
 import { db } from '@/configs';
 import { userResponses } from '@/configs/schema';
 import moment from 'moment';
 import { toast } from 'sonner';
 import { SignInButton, useUser } from '@clerk/nextjs';
+import { buildSmartDefaults, saveSmartValues, detectSmartKey } from '@/lib/smartFill';
 
-function FormUi({ jsonForm, selectedTheme, selectedStyle, onFieldUpdate, deleteField, editable = true, formId = 0, enabledSignIn = false }) {
+// Star rating component
+function StarRating({ fieldName, maxRating = 5, value, onChange, disabled }) {
+  const [hovered, setHovered] = useState(0);
+  const current = parseInt(value) || 0;
+  return (
+    <div className="flex gap-1 mt-1">
+      {Array.from({ length: maxRating }, (_, i) => i + 1).map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={disabled}
+          onMouseEnter={() => !disabled && setHovered(star)}
+          onMouseLeave={() => !disabled && setHovered(0)}
+          onClick={() => !disabled && onChange(fieldName, String(star))}
+          className="focus:outline-none"
+        >
+          <Star
+            className={`w-7 h-7 transition-colors ${
+              star <= (hovered || current)
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+      {current > 0 && (
+        <span className="ml-2 text-sm text-gray-500 self-center">
+          {current}/{maxRating}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Linear scale component
+function LinearScale({ fieldName, min = 1, max = 10, minLabel, maxLabel, value, onChange, disabled }) {
+  const current = parseInt(value) || min;
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <span>{minLabel || min}</span>
+        <span>{maxLabel || max}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={current}
+        disabled={disabled}
+        onChange={(e) => onChange(fieldName, e.target.value)}
+        className="w-full accent-primary"
+      />
+      <div className="flex justify-between mt-1">
+        {Array.from({ length: max - min + 1 }, (_, i) => i + min).map((n) => (
+          <span
+            key={n}
+            className={`text-xs cursor-pointer select-none ${
+              current === n ? 'text-primary font-bold' : 'text-gray-400'
+            }`}
+            onClick={() => !disabled && onChange(fieldName, String(n))}
+          >
+            {n}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FieldWrapper({ children, isAutoFilled }) {
+  return (
+    <div className="my-3 w-full bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:border-primary/30 transition-colors">
+      {isAutoFilled && (
+        <div className="flex items-center gap-1 mb-1">
+          <Zap className="w-3 h-3 text-blue-400" />
+          <span className="text-xs text-blue-400 font-medium">Auto-filled</span>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function FormUi({
+  jsonForm,
+  selectedTheme,
+  selectedStyle,
+  onFieldUpdate,
+  deleteField,
+  editable = true,
+  formId = 0,
+  enabledSignIn = false,
+}) {
   const [formData, setFormData] = useState({});
+  const [autoFilledFields, setAutoFilledFields] = useState({});
+  const [submitted, setSubmitted] = useState(false);
   let formRef = useRef();
   const { user, isSignedIn } = useUser();
 
+  // Load smart-fill defaults on mount (only in public/fill mode)
+  useEffect(() => {
+    if (!editable && jsonForm?.formFields) {
+      const defaults = buildSmartDefaults(jsonForm.formFields);
+      if (Object.keys(defaults).length > 0) {
+        setFormData((prev) => ({ ...defaults, ...prev }));
+        const flags = {};
+        Object.keys(defaults).forEach((k) => (flags[k] = true));
+        setAutoFilledFields(flags);
+      }
+    }
+  }, [editable, jsonForm]);
+
+  const markUserEdited = (fieldName) => {
+    setAutoFilledFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    markUserEdited(name);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    markUserEdited(name);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (fieldName, itemName, value) => {
-    const list = formData?.[fieldName] ? formData?.[fieldName] : [];
-
-    if (value) {
-      list.push({
-        label: itemName,
-        value: value,
-      });
-      setFormData({
-        ...formData,
-        [fieldName]: list,
-      });
+  const handleCheckboxChange = (fieldName, itemName, checked) => {
+    const list = formData?.[fieldName] ? [...formData[fieldName]] : [];
+    if (checked) {
+      list.push(itemName);
     } else {
-      const result = list.filter((item) => item.label == itemName);
-      setFormData({
-        ...formData,
-        [fieldName]: result,
-      });
+      const idx = list.indexOf(itemName);
+      if (idx > -1) list.splice(idx, 1);
     }
-  };
-
-  const handleFileChange = (event) => {
-    const { name, files } = event.target;
-    setFormData({
-      ...formData,
-      [name]: files[0], // Assuming single file upload
-    });
+    markUserEdited(fieldName);
+    setFormData((prev) => ({ ...prev, [fieldName]: list }));
   };
 
   const onFormSubmit = async (event) => {
     event.preventDefault();
-    console.log(formData);
 
-    const result = await db.insert(userResponses)
-      .values({
-        jsonResponse: formData,
-        createdAt: moment().format('DD/MM/yyy'),
+    try {
+      const result = await db.insert(userResponses).values({
+        jsonResponse: JSON.stringify(formData),
+        createdAt: moment().format('DD/MM/YYYY'),
         formRef: formId,
       });
 
-    if (result) {
-      formRef.reset();
-      toast('Response Submitted Successfully!');
-    } else {
-      toast('Error while saving your form!');
+      if (result) {
+        if (!editable) {
+          saveSmartValues(formData, jsonForm?.formFields);
+        }
+        setSubmitted(true);
+        toast('Response submitted successfully!');
+        formRef?.reset?.();
+        setFormData({});
+        setAutoFilledFields({});
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Error saving response. Please try again.');
     }
   };
 
+  if (submitted && !editable) {
+    return (
+      <div
+        className="border rounded-2xl shadow-lg p-10 md:w-[600px] flex flex-col items-center justify-center gap-4 text-center"
+        data-theme={selectedTheme}
+      >
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold">Thank you!</h2>
+        <p className="text-gray-500">Your response has been recorded.</p>
+        <button className="btn btn-primary mt-2" onClick={() => setSubmitted(false)}>
+          Submit another response
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form
-      ref={(e) => formRef = e}
+      ref={(e) => (formRef = e)}
       onSubmit={onFormSubmit}
-      className='border p-5 md:w-[600px] rounded-lg'
+      className="border border-gray-100 p-8 md:w-[600px] rounded-2xl shadow-lg bg-white"
       data-theme={selectedTheme}
       style={{
-        boxShadow: selectedStyle?.key == 'boxshadow' && '5px 5px 0px black',
-        border: selectedStyle?.key == 'border' && selectedStyle.value,
+        boxShadow:
+          selectedStyle?.key === 'boxshadow'
+            ? '5px 5px 0px black'
+            : undefined,
+        border:
+          selectedStyle?.key === 'border'
+            ? selectedStyle.value
+            : undefined,
       }}
     >
-      <h2 className='font-bold text-center text-2xl'>{jsonForm?.formTitle}</h2>
-      <h2 className='text-sm text-gray-400 text-center'>{jsonForm?.formSubheading}</h2>
+      <h2 className="font-bold text-center text-2xl tracking-tight">{jsonForm?.formTitle}</h2>
+      <h2 className="text-sm text-gray-400 text-center mt-1 mb-6">{jsonForm?.formSubheading}</h2>
 
-      {jsonForm?.formFields?.map((field, index) => (
-        <div key={index} className='flex items-center gap-2'>
-          {field.fieldType == 'select' ?
-            <div className='my-3 w-full'>
-              <label className='text-xs text-gray-500'>{field.label}</label>
-              <Select required={field?.required} onValueChange={(v) => handleSelectChange(field.fieldName, v)}>
-                <SelectTrigger className="w-full bg-transparent">
-                  <SelectValue placeholder={field.placeholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options.map((item, index) => (
-                    <SelectItem key={index} value={item.label ? item.label : item}>{item.label ? item.label : item}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {jsonForm?.formFields?.map((field, index) => {
+        const isAutoFilled = !!autoFilledFields[field.fieldName];
+
+        if (field.fieldType === 'select') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <Select
+                  required={field?.required}
+                  value={formData[field.fieldName] || ''}
+                  onValueChange={(v) => handleSelectChange(field.fieldName, v)}
+                >
+                  <SelectTrigger className="w-full bg-transparent">
+                    <SelectValue placeholder={field.placeholder || 'Select an option'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options?.map((item, i) => (
+                      <SelectItem key={i} value={item.label ?? item}>
+                        {item.label ?? item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
             </div>
-            : field.fieldType == 'radio' ?
-              <div className='w-full my-3'>
-                <label className='text-xs text-gray-500'>{field.label}</label>
-                <RadioGroup required={field?.required}>
-                  {field.options.map((item, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <RadioGroupItem value={item.label} id={item.label} onClick={() => handleSelectChange(field.fieldName, item.label)} />
-                      <Label htmlFor={item.label}>{item.label}</Label>
+          );
+        }
+
+        if (field.fieldType === 'radio') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <RadioGroup
+                  required={field?.required}
+                  value={formData[field.fieldName] || ''}
+                  onValueChange={(v) => handleSelectChange(field.fieldName, v)}
+                >
+                  {field.options?.map((item, i) => (
+                    <div key={i} className="flex items-center space-x-2">
+                      <RadioGroupItem value={item.label ?? item} id={`${field.fieldName}-${i}`} />
+                      <Label htmlFor={`${field.fieldName}-${i}`}>{item.label ?? item}</Label>
                     </div>
                   ))}
                 </RadioGroup>
-              </div>
-              : field.fieldType == 'checkbox' ?
-                <div className='my-3 w-full'>
-                  <label className='text-xs text-gray-500'>{field?.label}</label>
-                  {field?.options ? field?.options?.map((item, index) => (
-                    <div key={index} className='flex gap-2 items-center'>
-                      <Checkbox onCheckedChange={(v) => handleCheckboxChange(field?.label, item.label ? item.label : item, v)} />
-                      <h2>{item.label ? item.label : item}</h2>
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        if (field.fieldType === 'checkbox') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-2">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                {field?.options ? (
+                  field.options.map((item, i) => (
+                    <div key={i} className="flex gap-2 items-center mb-1">
+                      <Checkbox
+                        id={`${field.fieldName}-${i}`}
+                        checked={!!(formData[field.fieldName] || []).includes(item.label ?? item)}
+                        onCheckedChange={(v) =>
+                          handleCheckboxChange(field.fieldName, item.label ?? item, v)
+                        }
+                      />
+                      <Label htmlFor={`${field.fieldName}-${i}`}>{item.label ?? item}</Label>
                     </div>
                   ))
-                    :
-                    <div className='flex gap-2 items-center'>
-                      <Checkbox required={field.required} />
-                      <h2>{field.label}</h2>
-                    </div>
-                  }
-                </div>
-                : field.fieldType == 'file' ?
-                  <div className='my-3 w-full'>
-                    <label className='text-xs text-gray-500'>{field.label}</label>
-                    <Input type='file' name={field.fieldName} required={field?.required} onChange={handleFileChange} />
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <Checkbox required={field.required} />
+                    <Label>{field.label}</Label>
                   </div>
-                  :
-                  <div className='my-3 w-full'>
-                    <label className='text-xs text-gray-500'>{field.label}</label>
-                    <Input type={field?.type} placeholder={field.placeholder} name={field.fieldName} className="bg-transparent" required={field?.required} onChange={handleInputChange} />
-                  </div>
-          }
+                )}
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
 
-          {editable && <div>
-            <FieldEdit defaultValue={field} onUpdate={(value) => onFieldUpdate(value, index)} deleteField={() => deleteField(index)} />
-          </div>}
-        </div>
-      ))}
-      {!enabledSignIn ?
-        <button className='btn btn-primary'>Submit</button> :
-        isSignedIn ?
-          <button className='btn btn-primary'>Submit</button> :
-          <Button>
-            <SignInButton mode='modal'>Sign In before Submit</SignInButton>
+        if (field.fieldType === 'textarea') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <textarea
+                  name={field.fieldName}
+                  placeholder={field.placeholder}
+                  required={field?.required}
+                  value={formData[field.fieldName] || ''}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+                />
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        if (field.fieldType === 'rating') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <StarRating
+                  fieldName={field.fieldName}
+                  maxRating={field.maxRating || 5}
+                  value={formData[field.fieldName]}
+                  onChange={handleSelectChange}
+                  disabled={editable}
+                />
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        if (field.fieldType === 'scale') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <LinearScale
+                  fieldName={field.fieldName}
+                  min={field.min || 1}
+                  max={field.max || 10}
+                  minLabel={field.minLabel}
+                  maxLabel={field.maxLabel}
+                  value={formData[field.fieldName]}
+                  onChange={handleSelectChange}
+                  disabled={editable}
+                />
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        if (field.fieldType === 'phone') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="tel"
+                    name={field.fieldName}
+                    placeholder={field.placeholder || '+1 (555) 000-0000'}
+                    required={field?.required}
+                    value={formData[field.fieldName] || ''}
+                    onChange={handleInputChange}
+                    className="bg-transparent pl-9"
+                  />
+                </div>
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        if (field.fieldType === 'url') {
+          return (
+            <div key={index} className="flex items-start gap-2">
+              <FieldWrapper isAutoFilled={isAutoFilled}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                <div className="relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="url"
+                    name={field.fieldName}
+                    placeholder={field.placeholder || 'https://'}
+                    required={field?.required}
+                    value={formData[field.fieldName] || ''}
+                    onChange={handleInputChange}
+                    className="bg-transparent pl-9"
+                  />
+                </div>
+              </FieldWrapper>
+              {editable && (
+                <FieldEdit
+                  defaultValue={field}
+                  onUpdate={(v) => onFieldUpdate(v, index)}
+                  deleteField={() => deleteField(index)}
+                />
+              )}
+            </div>
+          );
+        }
+
+        // Default: text, email, number, date, time, password, file, etc.
+        return (
+          <div key={index} className="flex items-start gap-2">
+            <FieldWrapper isAutoFilled={isAutoFilled}>
+              <label className="text-sm font-medium text-gray-700 block mb-1">
+                {field.label}
+                {field.required && <span className="text-red-400 ml-1">*</span>}
+              </label>
+              {field.fieldType === 'file' ? (
+                <Input
+                  type="file"
+                  name={field.fieldName}
+                  required={field?.required}
+                  onChange={handleInputChange}
+                  className="bg-transparent"
+                />
+              ) : (
+                <Input
+                  type={field.fieldType || field.type || 'text'}
+                  placeholder={field.placeholder}
+                  name={field.fieldName}
+                  className="bg-transparent"
+                  required={field?.required}
+                  value={formData[field.fieldName] || ''}
+                  onChange={handleInputChange}
+                />
+              )}
+            </FieldWrapper>
+            {editable && (
+              <FieldEdit
+                defaultValue={field}
+                onUpdate={(v) => onFieldUpdate(v, index)}
+                deleteField={() => deleteField(index)}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      <div className="mt-6">
+        {!enabledSignIn ? (
+          <button type="submit" className="btn btn-primary w-full">
+            Submit
+          </button>
+        ) : isSignedIn ? (
+          <button type="submit" className="btn btn-primary w-full">
+            Submit
+          </button>
+        ) : (
+          <Button className="w-full">
+            <SignInButton mode="modal">Sign In to Submit</SignInButton>
           </Button>
-      }
+        )}
+      </div>
     </form>
   );
 }

@@ -1,47 +1,71 @@
-"use client"
-import { JsonForms } from '@/configs/schema'
-import React, { useEffect ,useState} from 'react'
-import { db } from '@/configs'
-import { eq } from 'drizzle-orm'
-import FormUi from '@/app/edit-form/_components/FormUi'
+'use client';
+import { JsonForms } from '@/configs/schema';
+import React, { useEffect, useState } from 'react';
+import { db } from '@/configs';
+import { eq } from 'drizzle-orm';
+import FormUi from '@/app/edit-form/_components/FormUi';
+import Image from 'next/image';
+import Link from 'next/link';
 
-function LiveAiForm({params}) {
-    const [record,setRecord]=useState();
-    const [jsonForm,setJsonForm]=useState([]);
-    useEffect(()=>{
-        params&&GetFormData()
-    },[params])
-    const GetFormData=async()=>{
-        const result=await db.select().from(JsonForms).where(eq(JsonForms.id,Number(params?.formid))).execute();
-        let jsonString = result[0].jsonform;
-      const firstBraceIndex = jsonString.indexOf("{");
-      const lastBraceIndex = jsonString.lastIndexOf("}");
-      const jsonStringCleaned = jsonString.substring(
-        firstBraceIndex,
-        lastBraceIndex + 1
-      );
-      console.log(jsonStringCleaned);
-      const parsedJson = JSON.parse(jsonStringCleaned);
-      setJsonForm(parsedJson);
-      setRecord(result[0]);
-        console.log(result);
-    }
+function LiveAiForm({ params }) {
+  const [record, setRecord] = useState();
+  const [jsonForm, setJsonForm] = useState([]);
+
+  useEffect(() => {
+    params && GetFormData();
+  }, [params]);
+
+  const GetFormData = async () => {
+    const result = await db
+      .select()
+      .from(JsonForms)
+      .where(eq(JsonForms.id, Number(params?.formid)))
+      .execute();
+
+    if (!result[0]) return;
+
+    let jsonString = result[0].jsonform;
+    const firstBraceIndex = jsonString.indexOf('{');
+    const lastBraceIndex = jsonString.lastIndexOf('}');
+    const jsonStringCleaned = jsonString.substring(firstBraceIndex, lastBraceIndex + 1);
+    const parsedJson = JSON.parse(jsonStringCleaned);
+    setJsonForm(parsedJson);
+    setRecord(result[0]);
+  };
+
   return (
-    <div className='p-10 flex justify-center items-center min-h-screen' style={{backgroundImage: record?.background, backgroundSize: 'cover', backgroundPosition: 'center'}}>
-  <div className='w-full max-w-3xl bg-white bg-opacity-75 p-8 rounded-lg shadow-md'>
-    <FormUi
-      jsonForm={jsonForm}
-      onFieldUpdate={() => console.log}
-      deleteField={() => console.log}
-      selectedTheme={record?.theme}
-      editable={false}
-      formId={record?.id}
-    />
-  </div>
-</div>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        backgroundImage: record?.background,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="flex-1 flex items-center justify-center p-6 py-12">
+        <FormUi
+          jsonForm={jsonForm}
+          onFieldUpdate={() => {}}
+          deleteField={() => {}}
+          selectedTheme={record?.theme}
+          selectedStyle={record?.style ? JSON.parse(record.style) : undefined}
+          editable={false}
+          formId={record?.id}
+          enabledSignIn={false}
+        />
+      </div>
 
-  
-  )
+      <footer className="py-4 text-center">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs text-white/70 hover:text-white transition-colors bg-black/20 backdrop-blur-sm rounded-full px-4 py-2"
+        >
+          <span>⚡</span>
+          <span>Built with INTELLIFORM</span>
+        </Link>
+      </footer>
+    </div>
+  );
 }
 
-export default LiveAiForm
+export default LiveAiForm;
