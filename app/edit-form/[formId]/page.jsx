@@ -108,8 +108,7 @@ function EditForm({ params }) {
     const updated = { ...jsonForm };
     updated.formFields[index] = {
       ...updated.formFields[index],
-      label: value.label,
-      placeholder: value.placeholder,
+      ...value,
     };
     setJsonForm(updated);
     setUpdateTrigger(Date.now());
