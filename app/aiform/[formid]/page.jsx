@@ -52,6 +52,7 @@ function LiveAiForm({ params }) {
           editable={false}
           formId={record?.id}
           enabledSignIn={false}
+          formBackground={jsonForm?.formBackground}
         />
       </div>
 

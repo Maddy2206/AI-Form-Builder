@@ -6,13 +6,14 @@ import { and, eq } from "drizzle-orm";
 import React, { useEffect, useState } from "react";
 import FormUi from "../_components/FormUi";
 import Controller from "../_components/Controller";
-import { ArrowLeft, Copy, Share2, SquareArrowOutUpRight } from "lucide-react";
+import {
+  ArrowLeft, Copy, Share2, SquareArrowOutUpRight, Palette,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { RWebShare } from "react-web-share";
 import { toast } from "sonner";
-
 
 function EditForm({ params }) {
   const { user } = useUser();
@@ -21,12 +22,38 @@ function EditForm({ params }) {
   const [record, setRecord] = useState(null);
   const [selectedTheme, setSelectedTheme] = useState("light");
   const [selectedBackground, setSelectedBackground] = useState("");
-  const router = useRouter(); 
+  const [showPreview, setShowPreview] = useState(true);
+  const [showToolbar, setShowToolbar] = useState(true);
+  const router = useRouter();
+
+  // ── Field management ──────────────────────────────────────────────────────
+  const onAddField = (fieldType) => {
+    const newField = generateDefaultField(fieldType);
+    const updated = { ...jsonForm, formFields: [...(jsonForm.formFields || []), newField] };
+    setJsonForm(updated);
+    setUpdateTrigger(Date.now());
+  };
+
+  const onReorder = (newFields) => {
+    const updated = { ...jsonForm, formFields: newFields };
+    setJsonForm(updated);
+    setUpdateTrigger(Date.now());
+  };
+
+  const onFontChange = (fontKey, value) => {
+    const updated = { ...jsonForm, [fontKey]: value };
+    setJsonForm(updated);
+    setUpdateTrigger(Date.now());
+  };
+
+  const onFormBgChange = (value) => {
+    const updated = { ...jsonForm, formBackground: value };
+    setJsonForm(updated);
+    setUpdateTrigger(Date.now());
+  };
 
   useEffect(() => {
-    if (user) {
-      GetFormData();
-    }
+    if (user) GetFormData();
   }, [user]);
 
   useEffect(() => {
@@ -48,18 +75,13 @@ function EditForm({ params }) {
           )
         )
         .execute();
-      let jsonString = result[0].jsonform;
-      const firstBraceIndex = jsonString.indexOf("{");
-      const lastBraceIndex = jsonString.lastIndexOf("}");
-      const jsonStringCleaned = jsonString.substring(
-        firstBraceIndex,
-        lastBraceIndex + 1
-      );
-      console.log(jsonStringCleaned);
-      const parsedJson = JSON.parse(jsonStringCleaned);
-      setJsonForm(parsedJson);
+      const jsonString = result[0].jsonform;
+      const first = jsonString.indexOf("{");
+      const last = jsonString.lastIndexOf("}");
+      const parsed = JSON.parse(jsonString.substring(first, last + 1));
+      setJsonForm(parsed);
       setRecord(result[0]);
-      setSelectedBackground(result[0].background);
+      setSelectedBackground(result[0].background || "");
     } catch (error) {
       console.error("Error fetching form data:", error);
     }
@@ -67,7 +89,7 @@ function EditForm({ params }) {
 
   const updateDatabase = async () => {
     try {
-      const result = await db
+      await db
         .update(JsonForms)
         .set({ jsonform: JSON.stringify(jsonForm) })
         .where(
@@ -77,41 +99,35 @@ function EditForm({ params }) {
           )
         )
         .execute();
-      console.log("Database updated successfully", result);
     } catch (error) {
       console.error("Error updating database:", error);
     }
   };
 
   const onFieldUpdate = (value, index) => {
-    const updatedForm = { ...jsonForm };
-    updatedForm.formFields[index] = {
-      ...updatedForm.formFields[index],
+    const updated = { ...jsonForm };
+    updated.formFields[index] = {
+      ...updated.formFields[index],
       label: value.label,
       placeholder: value.placeholder,
     };
-    setJsonForm(updatedForm);
+    setJsonForm(updated);
     setUpdateTrigger(Date.now());
   };
 
   const deleteField = (indexToRemove) => {
-    if (jsonForm.formFields && Array.isArray(jsonForm.formFields)) {
-      const updatedFields = jsonForm.formFields.filter(
-        (item, index) => index !== indexToRemove
-      );
-      setJsonForm({ ...jsonForm, formFields: updatedFields });
-      setUpdateTrigger(Date.now());
-    } else {
-      console.error("jsonForm.fields is not defined or is not an array");
-    }
+    if (!Array.isArray(jsonForm.formFields)) return;
+    setJsonForm({
+      ...jsonForm,
+      formFields: jsonForm.formFields.filter((_, i) => i !== indexToRemove),
+    });
+    setUpdateTrigger(Date.now());
   };
 
   const updateControllerFields = async (value, columnName) => {
-    const result = await db
+    await db
       .update(JsonForms)
-      .set({
-        [columnName]: value,
-      })
+      .set({ [columnName]: value })
       .where(
         and(
           eq(JsonForms.id, record.id),
@@ -122,9 +138,9 @@ function EditForm({ params }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div className="fixed inset-0 flex flex-col bg-white">
+      {/* ── Top bar ── */}
+      <div className="bg-white border-b border-gray-200 px-5 py-2.5 flex items-center justify-between flex-shrink-0 z-10">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium"
@@ -133,11 +149,36 @@ function EditForm({ params }) {
           Back
         </button>
 
+        {/* Center: view toggles (Overleaf-style) */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setShowPreview(false)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              !showPreview
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Editor
+          </button>
+          <button
+            onClick={() => setShowPreview(true)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              showPreview
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Split Preview
+          </button>
+        </div>
+
+        {/* Right: actions */}
         <div className="flex items-center gap-2">
           <Link href={'/aiform/' + record?.id} target="_blank">
             <Button size="sm" variant="outline" className="flex gap-2 h-8 text-xs">
               <SquareArrowOutUpRight className="h-3.5 w-3.5" />
-              Preview
+              Open
             </Button>
           </Link>
           <Button
@@ -164,14 +205,77 @@ function EditForm({ params }) {
               Share
             </Button>
           </RWebShare>
+
+          {!showToolbar && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex gap-2 h-8 text-xs"
+              onClick={() => setShowToolbar(true)}
+            >
+              <Palette className="h-3.5 w-3.5" />
+              Design
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-6xl mx-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+      {/* ── Body ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* Editor panel */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <PanelLabel dotColor="bg-blue-400" label="Editor" />
+          <div className="flex-1 overflow-auto p-6 bg-gray-50">
+            <FormUi
+              jsonForm={jsonForm}
+              onFieldUpdate={onFieldUpdate}
+              deleteField={deleteField}
+              selectedTheme={selectedTheme}
+              editable={true}
+              onReorder={onReorder}
+              wide={true}
+              formBackground={jsonForm?.formBackground}
+            />
+          </div>
+        </div>
+
+        {/* Live preview panel */}
+        {showPreview && (
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-l border-gray-200">
+            <PanelLabel dot="pulse" dotColor="bg-green-400" label="Live Preview" />
+            <div
+              className="flex-1 overflow-auto flex items-start justify-center p-8 bg-white"
+              style={{
+                backgroundImage: selectedBackground || undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            >
+              <FormUi
+                jsonForm={jsonForm}
+                selectedTheme={selectedTheme}
+                editable={false}
+                formId={0}
+                formBackground={jsonForm?.formBackground}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Right design toolbar */}
+        {showToolbar && (
+          <aside className="w-72 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0">
             <Controller
+              onClose={() => setShowToolbar(false)}
+              onAddField={onAddField}
+              onFontChange={onFontChange}
+              currentFonts={{
+                heading: jsonForm?.formHeadingFont,
+                body: jsonForm?.formBodyFont,
+              }}
+              onFormBgChange={onFormBgChange}
+              currentFormBg={jsonForm?.formBackground}
               selectedTheme={(value) => {
                 updateControllerFields(value, 'theme');
                 setSelectedTheme(value);
@@ -181,20 +285,33 @@ function EditForm({ params }) {
                 updateControllerFields(value, 'background');
               }}
             />
-          </div>
-          <div
-            className="md:col-span-2 border border-gray-200 rounded-2xl p-4 flex items-center justify-center min-h-[500px] bg-white shadow-sm"
-            style={{ backgroundImage: selectedBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}
-          >
-            <FormUi
-              jsonForm={jsonForm}
-              onFieldUpdate={onFieldUpdate}
-              deleteField={(index) => deleteField(index)}
-              selectedTheme={selectedTheme}
-            />
-          </div>
-        </div>
+          </aside>
+        )}
       </div>
+    </div>
+  );
+}
+
+function generateDefaultField(type) {
+  const id = `field_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const base = { fieldName: id, required: false };
+  const templates = {
+    text:     { ...base, fieldType: 'text',     label: 'Short Answer',  placeholder: 'Your answer…' },
+    textarea: { ...base, fieldType: 'textarea', label: 'Long Answer',   placeholder: 'Enter your response…' },
+    select:   { ...base, fieldType: 'select',   label: 'Dropdown',      placeholder: 'Select an option', options: [{ label: 'Option 1' }, { label: 'Option 2' }] },
+    radio:    { ...base, fieldType: 'radio',    label: 'Single Choice', options: [{ label: 'Option A' }, { label: 'Option B' }] },
+    checkbox: { ...base, fieldType: 'checkbox', label: 'Multiple Choice', options: [{ label: 'Choice 1' }, { label: 'Choice 2' }] },
+    date:     { ...base, fieldType: 'date',     label: 'Date' },
+    rating:   { ...base, fieldType: 'rating',   label: 'Rating',        maxRating: 5 },
+  };
+  return templates[type] || templates.text;
+}
+
+function PanelLabel({ dot, dotColor = 'bg-blue-400', label }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-100 flex-shrink-0">
+      <span className={`w-2 h-2 rounded-full inline-block ${dotColor} ${dot === 'pulse' ? 'animate-pulse' : ''}`} />
+      <span className="text-xs text-gray-400 font-medium">{label}</span>
     </div>
   );
 }
