@@ -145,7 +145,7 @@ function EditForm({ params }) {
             variant="outline"
             className="flex gap-2 h-8 text-xs"
             onClick={() => {
-              const url = `${process.env.NEXT_PUBLIC_BASE_URL}/aiform/${record?.id}`;
+              const url = `${window.location.origin}/aiform/${record?.id}`;
               navigator.clipboard.writeText(url).then(() => toast('Link copied!'));
             }}
           >
@@ -155,7 +155,7 @@ function EditForm({ params }) {
           <RWebShare
             data={{
               text: jsonForm?.formSubheading + ', Build your forms in minutes with INTELLIFORM',
-              url: process.env.NEXT_PUBLIC_BASE_URL + '/aiform/' + record?.id,
+              url: window.location.origin + '/aiform/' + record?.id,
               title: jsonForm?.formTitle,
             }}
           >

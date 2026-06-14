@@ -25,7 +25,7 @@ function FormListItem({ jsonForm, formRecord, refreshData }) {
   const { user } = useUser();
 
   const copyLink = () => {
-    const url = `${process.env.NEXT_PUBLIC_BASE_URL}/aiform/${formRecord?.id}`;
+    const url = `${window.location.origin}/aiform/${formRecord?.id}`;
     navigator.clipboard.writeText(url).then(() => toast('Link copied!'));
   };
 
@@ -84,7 +84,7 @@ function FormListItem({ jsonForm, formRecord, refreshData }) {
         <RWebShare
           data={{
             text: jsonForm?.formSubheading + ', Build your forms in minutes with INTELLIFORM',
-            url: process.env.NEXT_PUBLIC_BASE_URL + '/aiform/' + formRecord?.id,
+            url: window.location.origin + '/aiform/' + formRecord?.id,
             title: jsonForm?.formTitle,
           }}
         >
