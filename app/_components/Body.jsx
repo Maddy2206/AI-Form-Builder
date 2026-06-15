@@ -155,27 +155,25 @@ function Body() {
             {/* Left copy */}
             <div>
               {/* Badge */}
-              <div className="anim-fade-up inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm px-4 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-8 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: 'pulse-dot 2s ease-in-out infinite' }} />
-                Smart · No code required · Free to start
-              </div>
 
               {/* Headline */}
               <h1 className="font-display font-bold leading-[1.04] tracking-tight">
                 <span className="anim-fade-up anim-d1 block text-[clamp(2.6rem,6vw,4.5rem)] text-gray-950 dark:text-gray-50">
-                  Build forms
+                  Build forms in 
                 </span>
                 <span className="anim-fade-up anim-d2 block text-[clamp(2.6rem,6vw,4.5rem)] text-gray-950 dark:text-gray-50">
-                  people actually
+                  in <span className="gradient-text">seconds</span> not minutes
                 </span>
-                <span className="anim-fade-up anim-d3 block text-[clamp(2.6rem,6vw,4.5rem)] gradient-text">
+                {/* <span className="anim-fade-up anim-d3 block text-[clamp(2.6rem,6vw,4.5rem)] gradient-text">
                   complete.
-                </span>
+                </span> */}
               </h1>
 
               {/* Subtext */}
               <p className="anim-fade-up anim-d4 mt-6 text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-md leading-relaxed">
-                Describe your form in one sentence. Fields, types, and styling are ready in under 5 seconds.
+               Turn your idea into a polished form.
+Simply tell us what you need to collect, and we'll generate a beautifully organized form.
+Ready to customize and share.
               </p>
 
               {/* CTAs */}
@@ -195,9 +193,9 @@ function Body() {
               {/* Mini stats */}
               <div className="anim-fade-up anim-d6 flex gap-7 mt-10 pt-8 border-t border-gray-200 dark:border-gray-800">
                 {[
-                  { val: '2K+', label: 'Forms created' },
-                  { val: '50K+', label: 'Responses' },
-                  { val: '< 5 min', label: 'Build time' },
+                  { val: '100+', label: 'Forms created' },
+                  { val: '10K+', label: 'Responses' },
+                  { val: '< 1 min', label: 'Build time' },
                 ].map((s) => (
                   <div key={s.label}>
                     <p className="font-display font-bold text-2xl text-gray-950 dark:text-gray-50">{s.val}</p>

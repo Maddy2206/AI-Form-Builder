@@ -21,7 +21,9 @@ function Header() {
     path.includes('About') ||
     path.includes('Features') ||
     path.startsWith('/dashboard') ||
-    path.startsWith('/edit-form')
+    path.startsWith('/edit-form') ||
+    path.startsWith('/sign-in') ||
+    path.startsWith('/sign-up')
   )
     return null;
 
