@@ -3,7 +3,7 @@ import { db } from "@/configs";
 import { JsonForms } from "@/configs/schema";
 import { useUser } from "@clerk/nextjs";
 import { and, eq } from "drizzle-orm";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import FormUi from "../_components/FormUi";
 import Controller from "../_components/Controller";
 import {
@@ -24,7 +24,56 @@ function EditForm({ params }) {
   const [selectedBackground, setSelectedBackground] = useState("");
   const [showPreview, setShowPreview] = useState(true);
   const [showToolbar, setShowToolbar] = useState(true);
+
+  // Panel sizing
+  const [editorPercent, setEditorPercent] = useState(50);
+  const [toolbarWidth, setToolbarWidth] = useState(288);
+  const bodyRef = useRef(null);
+
   const router = useRouter();
+
+  // ── Resize handlers ───────────────────────────────────────────────────────
+  const startEditorPreviewDrag = useCallback((e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startPercent = editorPercent;
+    const bodyWidth = bodyRef.current?.offsetWidth || 1000;
+    const availableWidth = bodyWidth - (showToolbar ? toolbarWidth : 0);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (ev) => {
+      const deltaPercent = ((ev.clientX - startX) / availableWidth) * 100;
+      setEditorPercent(Math.min(80, Math.max(20, startPercent + deltaPercent)));
+    };
+    const onUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }, [editorPercent, showToolbar, toolbarWidth]);
+
+  const startToolbarDrag = useCallback((e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = toolbarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = (ev) => {
+      const delta = ev.clientX - startX;
+      setToolbarWidth(Math.min(480, Math.max(200, startWidth - delta)));
+    };
+    const onUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }, [toolbarWidth]);
 
   // ── Field management ──────────────────────────────────────────────────────
   const onAddField = (fieldType) => {
@@ -220,10 +269,13 @@ function EditForm({ params }) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div ref={bodyRef} className="flex flex-1 overflow-hidden">
 
         {/* Editor panel */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div
+          className="flex flex-col min-w-0 overflow-hidden"
+          style={showPreview ? { width: `${editorPercent}%`, flexShrink: 0 } : { flex: 1 }}
+        >
           <PanelLabel dotColor="bg-blue-400" label="Editor" />
           <div className="flex-1 overflow-auto p-6 bg-gray-50">
             <FormUi
@@ -239,9 +291,14 @@ function EditForm({ params }) {
           </div>
         </div>
 
+        {/* Editor ↔ Preview divider */}
+        {showPreview && (
+          <ResizeDivider onPointerDown={startEditorPreviewDrag} />
+        )}
+
         {/* Live preview panel */}
         {showPreview && (
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden border-l border-gray-200">
+          <div className="flex flex-col min-w-0 overflow-hidden" style={{ flex: 1 }}>
             <PanelLabel dot="pulse" dotColor="bg-green-400" label="Live Preview" />
             <div
               className="flex-1 overflow-auto flex items-start justify-center p-8 bg-white"
@@ -262,9 +319,17 @@ function EditForm({ params }) {
           </div>
         )}
 
+        {/* Preview ↔ Toolbar divider (split mode) / Editor ↔ Toolbar divider (editor-only mode) */}
+        {showToolbar && (
+          <ResizeDivider onPointerDown={startToolbarDrag} />
+        )}
+
         {/* Right design toolbar */}
         {showToolbar && (
-          <aside className="w-72 border-l border-gray-200 bg-white overflow-y-auto flex-shrink-0">
+          <aside
+            className="flex flex-col bg-white overflow-hidden flex-shrink-0"
+            style={{ width: `${toolbarWidth}px` }}
+          >
             <Controller
               onClose={() => setShowToolbar(false)}
               onAddField={onAddField}
@@ -311,6 +376,25 @@ function PanelLabel({ dot, dotColor = 'bg-blue-400', label }) {
     <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-100 flex-shrink-0">
       <span className={`w-2 h-2 rounded-full inline-block ${dotColor} ${dot === 'pulse' ? 'animate-pulse' : ''}`} />
       <span className="text-xs text-gray-400 font-medium">{label}</span>
+    </div>
+  );
+}
+
+function ResizeDivider({ onPointerDown }) {
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      className="flex-shrink-0 group relative cursor-col-resize select-none z-10"
+      style={{ width: '8px' }}
+    >
+      {/* Invisible hit area with visible line in center */}
+      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 group-hover:bg-blue-400 group-active:bg-blue-500 transition-colors" />
+      {/* Drag handle dots */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col gap-[3px] items-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="w-[3px] h-[3px] rounded-full bg-blue-400" />
+        ))}
+      </div>
     </div>
   );
 }
