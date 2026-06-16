@@ -194,9 +194,9 @@ function FormUi({
     loadGoogleFont(jsonForm?.formBodyFont);
   }, [jsonForm?.formHeadingFont, jsonForm?.formBodyFont]);
 
-  // Smart-fill defaults (public fill mode only)
+  // Smart-fill defaults (public fill mode only — not in the editor preview panel)
   useEffect(() => {
-    if (!editable && jsonForm?.formFields) {
+    if (!editable && formId !== 0 && jsonForm?.formFields) {
       const defaults = buildSmartDefaults(jsonForm.formFields);
       if (Object.keys(defaults).length > 0) {
         setFormData((prev) => ({ ...defaults, ...prev }));
@@ -504,7 +504,7 @@ function FormUi({
     <form
       ref={(e) => (formRef = e)}
       onSubmit={onFormSubmit}
-      className={`border border-gray-100 p-8 rounded-2xl shadow-lg ${wide ? 'w-full max-w-3xl mx-auto' : 'md:w-[600px]'}`}
+      className={`border border-gray-100 p-8 rounded-2xl shadow-lg w-full ${wide ? 'max-w-3xl mx-auto' : 'max-w-4xl mx-auto'}`}
       data-theme={selectedTheme}
       style={{
         fontFamily: bodyFont,

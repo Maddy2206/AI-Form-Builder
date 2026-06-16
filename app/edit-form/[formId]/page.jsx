@@ -8,6 +8,7 @@ import FormUi from "../_components/FormUi";
 import Controller from "../_components/Controller";
 import {
   ArrowLeft, Copy, Share2, SquareArrowOutUpRight, Palette,
+  Wrench,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -261,8 +262,8 @@ function EditForm({ params }) {
               className="flex gap-2 h-8 text-xs"
               onClick={() => setShowToolbar(true)}
             >
-              <Palette className="h-3.5 w-3.5" />
-              Design
+              <Wrench className="h-3.5 w-3.5" />
+              ToolBar
             </Button>
           )}
         </div>
@@ -277,7 +278,15 @@ function EditForm({ params }) {
           style={showPreview ? { width: `${editorPercent}%`, flexShrink: 0 } : { flex: 1 }}
         >
           <PanelLabel dotColor="bg-blue-400" label="Editor" />
-          <div className="flex-1 overflow-auto p-6 bg-gray-50">
+          <div
+              className="flex-1 overflow-auto p-6"
+              style={{
+                backgroundImage: selectedBackground || undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: selectedBackground ? undefined : '#f9fafb',
+              }}
+            >
             <FormUi
               jsonForm={jsonForm}
               onFieldUpdate={onFieldUpdate}

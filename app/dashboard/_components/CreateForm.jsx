@@ -1,16 +1,15 @@
 "use client";
 
 import moment from 'moment';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { db } from '@/configs';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { AiChatSession } from '@/configs/AiModel';
@@ -23,47 +22,70 @@ const PROMPT = `, On the basis of the description give a form in JSON format wit
 
 function CreateForm() {
   const [openDialog, setOpenDialog] = useState(false);
-  const [userInput, setUserInput] = useState('');
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
   const route = useRouter();
 
+  const onClose = () => {
+    setOpenDialog(false);
+    setFormName('');
+    setFormDescription('');
+  };
+
   const onCreateForm = async () => {
+    if (!formName.trim() || !formDescription.trim()) return;
     setLoading(true);
-    const result = await AiChatSession.sendMessage("Description: " + userInput + PROMPT);
+    const result = await AiChatSession.sendMessage("Description: " + formDescription + PROMPT);
     if (result.response.text()) {
       const resp = await db.insert(JsonForms).values({
         jsonform: result.response.text(),
         createdBy: user?.primaryEmailAddress?.emailAddress,
-        createdAt: moment().format('DD/MM/YYYY')
-      }).returning({id:JsonForms.id});
+        createdAt: moment().format('DD/MM/YYYY HH:mm'),
+        formName: formName.trim(),
+        formDescription: formDescription.trim(),
+      }).returning({ id: JsonForms.id });
       if (resp[0].id) {
         route.push('/edit-form/' + resp[0].id);
       }
-      setLoading(false);
-    } else {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
     <div>
       <Button className='bg-primary' onClick={() => setOpenDialog(true)}>+ Create form</Button>
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Dialog open={openDialog} onOpenChange={(open) => !open && onClose()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Form</DialogTitle>
-            <DialogDescription>
-              <Textarea className="my-3" onChange={(event) => setUserInput(event.target.value)} placeholder="Give a description about your form">
-              </Textarea>
-              <div className='flex gap-3 my-3 justify-end'>
-                <Button variant="destructive" onClick={() => setOpenDialog(false)}>Cancel</Button>
-                <Button disabled={loading} onClick={onCreateForm}>
-                  {loading ? <Loader2 className='animate-spin' /> : 'Create'}
-                </Button>
-              </div>
-            </DialogDescription>
           </DialogHeader>
+          <div className="flex flex-col gap-3 mt-1">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Form Name</label>
+              <Input
+                placeholder="e.g. Customer Feedback Survey"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Description</label>
+              <Textarea
+                placeholder="Describe what your form should collect..."
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-1">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button disabled={loading || !formName.trim() || !formDescription.trim()} onClick={onCreateForm}>
+                {loading ? <Loader2 className='animate-spin' /> : 'Create'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

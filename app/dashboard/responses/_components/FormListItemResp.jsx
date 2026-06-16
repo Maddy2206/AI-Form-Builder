@@ -36,7 +36,7 @@ function FormListItemResp({ jsonForm, formRecord }) {
     const worksheet = XLSX.utils.json_to_sheet(jsonData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Responses');
-    XLSX.writeFile(workbook, (jsonForm?.formTitle || 'responses') + '.xlsx');
+    XLSX.writeFile(workbook, (formRecord?.formName || jsonForm?.formTitle || 'responses') + '.xlsx');
     setLoading(false);
   };
 
@@ -59,10 +59,10 @@ function FormListItemResp({ jsonForm, formRecord }) {
 
       {/* Title & description */}
       <h3 className="font-display font-semibold text-gray-900 text-sm leading-snug line-clamp-2 mb-1">
-        {jsonForm?.formTitle || 'Untitled Form'}
+        {formRecord?.formName || jsonForm?.formTitle || 'Untitled Form'}
       </h3>
       <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-5">
-        {jsonForm?.formSubheading || 'No description'}
+        {formRecord?.formDescription || jsonForm?.formSubheading || 'No description'}
       </p>
 
       {/* Actions */}

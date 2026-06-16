@@ -7,7 +7,9 @@ export const JsonForms=pgTable('jsonForms',{
     createdAt:varchar('createdAt').notNull(),
     theme:varchar('theme'),
     background:varchar('background'),
-    style:varchar('style')
+    style:varchar('style'),
+    formName:varchar('formName'),
+    formDescription:varchar('formDescription'),
 })
 
 export const userResponses=pgTable('userResponses',{
